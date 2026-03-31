@@ -20,34 +20,34 @@ A simple Product Management application built with **Flask (Python)** for the ba
 ## Installation
 
 1. Clone this repository:
-
    ```bash
    git clone (https://github.com/muhsamudra12/product-management.git)
 
    cd product-management
-
    ```
 
 2. Install dependencies:
-
 ```Bash
     pip install -r requirements.txt
+```
 
 3. Run the application:
-
+```Bash
     python run.py
-    Open: http://127.0.0.1:5000 in your browser.
 
+    Open: http://127.0.0.1:5000 in your browser.
+```
 
 
 ## Testing with Behave
 To run the BDD tests, ensure the server is running or configured for testing, then execute:
 
-Bash
+```Bash
 python -m behave
+```
 
 ## Project Structure
 - service/: Contains Flask routes and models.
 - features/: Contains Gherkin .feature files and step definitions.
 - static/ or templates/: Contains index.html.
-```
+
