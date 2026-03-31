@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Management Administration</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 30px;
+        background-color: #f8f9fa;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      #flash_message {
+        color: #28a745;
+        font-weight: bold;
+        margin-bottom: 15px;
+        min-height: 20px;
+      }
+      .actions {
+        margin-top: 20px;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-right: 5px;
+      }
+      #create-btn {
+        background-color: #28a745;
+        color: white;
+      }
+      #search-btn {
+        background-color: #007bff;
+        color: white;
+      }
+      #update-btn {
+        background-color: #ffc107;
+        color: black;
+      }
+      #clear-btn {
+        background-color: #6c757d;
+        color: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .btn-edit {
+        background-color: #17a2b8;
+        color: white;
+        padding: 5px 8px;
+        font-size: 12px;
+      }
+      .btn-delete {
+        background-color: #dc3545;
+        color: white;
+        padding: 5px 8px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Product Management</h1>
+      <div id="flash_message"></div>
+
+      <div class="form-horizontal">
+        <input type="hidden" id="product_id" />
+
+        <div class="form-group">
+          <label>Name:</label> <input type="text" id="name" />
+        </div>
+        <div class="form-group">
+          <label>Category:</label>
+          <select id="category">
+            <option value=""></option>
+            <option value="Electronics">Electronics</option>
+            <option value="Apparel">Apparel</option>
+            <option value="Food">Food</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price:</label> <input type="number" id="price" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Available:</label>
+          <select id="available">
+            <option value="true">True</option>
+            <option value="false">False</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Description:</label> <textarea id="description"></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="create-btn">Create</button>
+          <button id="search-btn">Search</button>
+          <button id="update-btn">Update</button>
+          <button id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <table id="search_results">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <script>
+      const flash = document.getElementById("flash_message");
+
+      function getFormData() {
+        return {
+          name: document.getElementById("name").value,
+          category: document.getElementById("category").value,
+          price: parseFloat(document.getElementById("price").value),
+          available: document.getElementById("available").value === "true",
+          description: document.getElementById("description").value,
+        };
+      }
+
+      // --- 1. CREATE (POST) ---
+      document.getElementById("create-btn").onclick = function () {
+        fetch("/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(getFormData()),
+        })
+          .then((res) => res.json())
+          .then((res) => {
+            flash.innerText = "Success"; // Agar asersi 'I should see the message "Success"' lulus
+            document.getElementById("clear-btn").click();
+          });
+      };
+
+      // --- 2. SEARCH (GET) ---
+      document.getElementById("search-btn").onclick = function () {
+        let name = document.getElementById("name").value;
+        let url = "/products";
+        if (name) url += "?name=" + encodeURIComponent(name);
+
+        fetch(url)
+          .then((res) => res.json())
+          .then((products) => {
+            updateTable(products);
+            flash.innerText = "Query Successful";
+          });
+      };
+
+      // --- 3. UPDATE (PUT) ---
+      document.getElementById("update-btn").onclick = function () {
+        let id = document.getElementById("product_id").value;
+        if (!id) return alert("Select the product from the table first!");
+
+        fetch("/products/" + id, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(getFormData()),
+        }).then((res) => {
+          flash.innerText = "Success";
+          document.getElementById("search-btn").click();
+        });
+      };
+
+      // --- 4. DELETE (DELETE) ---
+      window.deleteProduct = function (id) {
+        if (confirm("Hapus produk ini?")) {
+          fetch("/products/" + id, { method: "DELETE" }).then(() => {
+            flash.innerText = "Product has been Deleted!"; // Untuk asersi Delete
+            document.getElementById("search-btn").click();
+          });
+        }
+      };
+
+      // --- 5. EDIT (Fill Form) ---
+      window.editProduct = function (id, name, cat, price, desc, available) {
+        document.getElementById("product_id").value = id;
+        document.getElementById("name").value = name;
+        document.getElementById("category").value = cat;
+        document.getElementById("price").value = price;
+        document.getElementById("description").value = desc;
+        document.getElementById("available").value = available.toString();
+        flash.innerText = "";
+      };
+
+      // --- 6. CLEAR ---
+      document.getElementById("clear-btn").onclick = function () {
+        document.getElementById("product_id").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("category").value = "";
+        document.getElementById("price").value = "";
+        document.getElementById("description").value = "";
+        flash.innerText = "";
+      };
+
+      // --- 7. RENDER TABEL ---
+      function updateTable(products) {
+        let tbody = document.querySelector("#search_results tbody");
+        tbody.innerHTML = "";
+        products.forEach((p) => {
+          let row = `<tr>
+            <td>${p.id}</td>
+            <td>${p.name}</td>
+            <td>${p.category}</td>
+            <td>${p.price}</td>
+            <td>
+              <button class="btn-edit" onclick="editProduct(${p.id}, '${p.name}', '${p.category}', ${p.price}, '${p.description}', ${p.available})">Edit</button>
+              <button class="btn-delete" onclick="deleteProduct(${p.id})">Delete</button>
+            </td>
+          </tr>`;
+          tbody.innerHTML += row;
+        });
+      }
+    </script>
+  </body>
+</html>
